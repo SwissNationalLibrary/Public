@@ -105,12 +105,12 @@ def xsl_transform(path_to_saxon, path_to_xslt, input_file):
     # run transformation with stdout PIPE
     out = subprocess.run(args, shell=True, stdout=subprocess.PIPE)
     # write stdout to temporary file
-    with open('tmp.xml', 'a', encoding='utf-8') as tmp:
+    with open('output.xml', 'a', encoding='utf-8') as tmp:
         # write stdout to file and remove unwanted namespaces
         tmp.write(re.sub(r' xmlns=\".*\.xsd\"', '', out.stdout.decode('utf-8')))
 
 
-# Funktion "Hauptprogramm"
+# Funktion "Hauptprogramm" - main programm
 # --------------------------------------------------------------------------------------------------
 def main():
     """Start main program."""
@@ -140,8 +140,8 @@ def main():
     # Create output file using multiprocessing if file list contains files
     if len(file_list) > 0:
         # Create temp file
-        if __name__ == "__main__":
-            poolit(file_list)
+        # if __name__ == "__main__":
+        #     poolit(file_list)
         # Create output file
         with open('output.xml', 'w', encoding='utf-8') as output:
             output.write('<?xml version="1.0" encoding="UTF-8"?>\n<collection \
@@ -149,13 +149,15 @@ xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSche
 xsi:schemaLocation="http://www.loc.gov/MARC21/slim \
 http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
             # read temp file
-            with open('tmp.xml', 'r', encoding='utf-8') as tmp:
-                lines = tmp.readlines()
-                for line in lines:
-                    output.write(line)
+            # with open('tmp.xml', 'r', encoding='utf-8') as tmp:
+            #     lines = tmp.readlines()
+            #     for line in lines:
+            #         output.write(line)
+        poolit(file_list)
+        with open('output.xml', 'a', encoding='utf-8') as output:
             output.write('</collection>')
-            # rempve temp file
-            os.remove('tmp.xml')
+            # remove temp file
+            # os.remove('tmp.xml')
         print('Datei "output.xml" wurde produziert.')
     else:
         sys.exit('Keine Dateien vorhanden...')
