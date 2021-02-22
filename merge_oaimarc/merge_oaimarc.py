@@ -139,25 +139,15 @@ def main():
 
     # Create output file using multiprocessing if file list contains files
     if len(file_list) > 0:
-        # Create temp file
-        # if __name__ == "__main__":
-        #     poolit(file_list)
         # Create output file
         with open('output.xml', 'w', encoding='utf-8') as output:
             output.write('<?xml version="1.0" encoding="UTF-8"?>\n<collection \
 xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
 xsi:schemaLocation="http://www.loc.gov/MARC21/slim \
 http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
-            # read temp file
-            # with open('tmp.xml', 'r', encoding='utf-8') as tmp:
-            #     lines = tmp.readlines()
-            #     for line in lines:
-            #         output.write(line)
         poolit(file_list)
         with open('output.xml', 'a', encoding='utf-8') as output:
             output.write('</collection>')
-            # remove temp file
-            # os.remove('tmp.xml')
         print('Datei "output.xml" wurde produziert.')
     else:
         sys.exit('Keine Dateien vorhanden...')
