@@ -1,5 +1,5 @@
-""" Skript zur Zusammenführung von OAI-Datenpaketen in einer XML-Datei.
-    Script to merge multiple OAI data packages into one xml file
+"""Skript zur Zusammenführung von OAI-Datenpaketen in einer XML-Datei.
+   Script to merge multiple OAI data packages into one xml file
 
 Getestet auf Linux, macos und Windows 10
 Tested on linux, macos and windows 10
@@ -114,7 +114,6 @@ def xsl_transform(path_to_saxon, path_to_xslt, input_file):
 # --------------------------------------------------------------------------------------------------
 def main():
     """Start main program."""
-
     # Ask for input path to oaimarc files
     while True:
         pfad = input('Bitte kompletten Pfad zu den Daten angeben: ').rstrip('/\ ').strip("'\"")
