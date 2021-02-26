@@ -1,10 +1,9 @@
 """Skript zur Zusammenführung von OAI-Datenpaketen in einer XML-Datei.
    Script to merge multiple OAI data packages into one xml file
 
-Getestet auf Linux, macos und Windows 10
-Tested on linux, macos and windows 10
+Getestet auf - tested on: Linux, macos und Windows 10
 Voraussetzung - requirements: Python 3.9+, Java 8+, Saxon 9+
-Version 1.0 - Autor: vit
+Version 1.5 - Autor: vit
 """
 
 # --------------------------------------------------------------------------------------------------
@@ -46,15 +45,32 @@ def progress(count, total, status=''):
         sys.stdout.write('\n')
 
 
-# Funktion "Transformiere XML" mittels Multiprocessor --
-# Function "Transform XML using Multiprocessor"
+# Funktion "Transformiere XML" - function "Transform XML"
 # --------------------------------------------------------------------------------------------------
-def poolit(file_list):
-    """Generate Multiprocessor pool to transform XML files.
+def xsl_transform(path_to_saxon, path_to_xslt, input_file):
+    """Transform XML files using subprocess and Saxon.
 
-    :param file_list: list of files to process
-    :type file_list: (list)
+    :param path_to_saxon: path to saxon (saxon.jar or Transform)
+    :type path_to_saxon: (str)
+    :param path_to_xslt: path to XSLT file
+    :type path_to_xslt: (str)
+    :param input_file: path to XML file
+    :type input_file: (str)
     """
+    # set up saxon to output to stdout
+    args = '{} -s:"{}" -xsl:"{}"'.format(path_to_saxon, input_file, path_to_xslt)
+    # run transformation with stdout PIPE
+    out = subprocess.run(args, shell=True, stdout=subprocess.PIPE)
+    # remove unwanted namespace and encode as utf-8
+    xmlout = re.sub(r' xmlns=\".*\.xsd\"', '', out.stdout.decode('utf-8'))
+
+    return xmlout
+
+
+# Funktion "Hauptprogramm" - main programm
+# --------------------------------------------------------------------------------------------------
+def main():
+    """Start main program."""
     # Find path_to_saxon and set path_to_xslt
     if platform.system() == 'Windows':
         if 'saxon' in os.getenv('Path').lower():
@@ -73,51 +89,19 @@ def poolit(file_list):
                 continue
         try:
             path_to_saxon = path_to_saxon
-        except 'NameError':
+        except NameError:
             sys.exit('Saxon ist nicht installiert oder kann nicht gefunden werden.')
+    # Look for xslt file - if not present end program
+    try:
+        with open(os.path.abspath(os.path.join(os.getcwd(), 'read_records.xsl'))):
+            path_to_xslt = os.path.abspath(os.path.join(os.getcwd(), 'read_records.xsl'))
+    except FileNotFoundError:
+        sys.exit('The file "read_records.xsl" is missing')
 
-    path_to_xslt = os.path.abspath(os.path.join(os.getcwd(), 'read_records.xsl'))
-
-    # Initialise multiprocessing
-    pool = mp.Pool(mp.cpu_count())
-    # set fixed arguments for xslt transformation
-    func = partial(xsl_transform, path_to_saxon, path_to_xslt)
-    # iterate over the file_list with preset xslt_transform and file_list as iterator
-    for cnt, _ in enumerate(pool.imap_unordered(func, file_list), 1):
-        progress(cnt, len(file_list), status='XML verarbeitet')
-    pool.close()
-
-
-# Funktion "Transformiere XML"
-# --------------------------------------------------------------------------------------------------
-def xsl_transform(path_to_saxon, path_to_xslt, input_file):
-    """Transform XML files using subprocess and Saxon.
-
-    :param path_to_saxon: path to saxon (saxon.jar or Transform)
-    :type path_to_saxon: (str)
-    :param path_to_xslt: path to XSLT file
-    :type path_to_xslt: (str)
-    :param input_file: path to XML file
-    :type input_file: (str)
-    """
-    # set up saxon to output to stdout
-    args = '{} -s:"{}" -xsl:"{}"'.format(path_to_saxon, input_file, path_to_xslt)
-    # run transformation with stdout PIPE
-    out = subprocess.run(args, shell=True, stdout=subprocess.PIPE)
-    # write stdout to temporary file
-    with open('output.xml', 'a', encoding='utf-8') as tmp:
-        # write stdout to file and remove unwanted namespaces
-        tmp.write(re.sub(r' xmlns=\".*\.xsd\"', '', out.stdout.decode('utf-8')))
-
-
-# Funktion "Hauptprogramm" - main programm
-# --------------------------------------------------------------------------------------------------
-def main():
-    """Start main program."""
     # Ask for input path to oaimarc files
     while True:
         pfad = input('Bitte kompletten Pfad zu den Daten angeben: ').rstrip('/\ ').strip("'\"")
-        # remove escape characters from path
+        # remove escape characters from path on macos
         if '\\' in pfad and platform.system() == 'Darwin':
             pfad = pfad.replace('\\', '')
         if os.path.isdir(pfad):
@@ -127,7 +111,7 @@ def main():
                   format(pfad))
             continue
 
-    # Create list of all oaimarc files (test for ".xml")
+    # Create list of all oaimarc files (test for ".xml" and omit resource forks)
     flist = [datei for datei in os.listdir(pfad)
              if os.path.isfile(os.path.join(pfad, datei)) and datei.lower().endswith('.xml')
              and not datei.startswith('._')]
@@ -144,8 +128,14 @@ def main():
 xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
 xsi:schemaLocation="http://www.loc.gov/MARC21/slim \
 http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
-        poolit(file_list)
-        with open('output.xml', 'a', encoding='utf-8') as output:
+            # set fixed arguments for xslt transformation
+            func = partial(xsl_transform, path_to_saxon, path_to_xslt)
+            # iterate over the file_list with preset xslt_transform and file_list as iterator
+            with mp.Pool(mp.cpu_count()) as pool:
+                for cnt, _ in enumerate(pool.imap_unordered(func, file_list), 1):
+                    output.write(_)
+                    output.flush()
+                    progress(cnt, len(file_list), status='XML verarbeitet')
             output.write('</collection>')
         print('Datei "output.xml" wurde produziert.')
     else:
@@ -155,6 +145,5 @@ http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
 # --------------------------------------------------------------------------------------------------
 # HAUPTPROGRAMM
 # --------------------------------------------------------------------------------------------------
-
 if __name__ == "__main__":
     main()
