@@ -2,8 +2,8 @@
    Script to merge multiple OAI data packages into one xml file
 
 Getestet auf - tested on: Linux, macos und Windows 10
-Voraussetzung - requirements: Python 3.9+, Java 8+, Saxon 9+
-Version 1.5 - Autor: vit
+Voraussetzung - requirements: Python 3.9+
+Version 2.0 - Autor: vit
 """
 
 # --------------------------------------------------------------------------------------------------
