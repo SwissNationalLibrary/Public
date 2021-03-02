@@ -77,7 +77,6 @@ def parse_xml(input_file):
 # --------------------------------------------------------------------------------------------------
 def main():
     """Start main program."""
-
     # Ask for input path to oaimarc files
     while True:
         pfad = input('Bitte kompletten Pfad zu den Daten angeben: ').rstrip('/\ ').strip("'\"")
