@@ -1,5 +1,5 @@
 # OAI Harvester Tool
-The **OAI Harvester Tool** is a standalone version of the OAI harvester component of the [Archives Portal Europes backend solution](https://github.com/ArchivesPortalEuropeFoundation/ape-backend).
+The **OAI Harvester Tool** is a standalone version of the OAI harvester component of the [Archives Portal Europes backend solution](https://github.com/ArchivesPortalEuropeFoundation/ape-backend/README.md).
 
 The Tool is provided as-is in oder to facilitate the download of the [National Libraries bibliographical meta data](https://opendata.swiss/de/organization/schweizerische-nationalbibliothek-nb) via OAI-PMH.
 
