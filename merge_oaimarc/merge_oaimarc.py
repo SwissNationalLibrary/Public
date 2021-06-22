@@ -65,8 +65,22 @@ def parse_xml(input_file):
             # look for oaimarc-record with defined namespaces
             rec = node.find('a:metadata/b:record', ns)
             # if a oaimarc-record is present add it to list as a string
-            if rec is not None:
-                rec_list.append(ET.tostring(rec, encoding='unicode'))
+            if rec is not None and rec.find('b:controlfield[@tag="008"]', ns) is not None:
+                t_008 = rec.find('b:controlfield[@tag="008"]', ns).text
+                if t_008 is not None:
+                    if len(t_008) > 40:
+                        pass
+                    elif not t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
+                        rec_list.append(ET.tostring(rec, encoding='unicode'))
+                    elif t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
+                        if int(t_008[7:11]) < 2000:
+                            rec_list.append(ET.tostring(rec, encoding='unicode'))
+                    elif t_008[11:15].isnumeric() and not t_008[7:11].isnumeric():
+                        if int(t_008[11:15]) < 2000:
+                            rec_list.append(ET.tostring(rec, encoding='unicode'))
+                    elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
+                        if int(t_008[7:11]) < 2000 or int(t_008[11:15]) < 2000:
+                            rec_list.append(ET.tostring(rec, encoding='unicode'))
     # remove all namespaces and namespace-prefixes because the namespace is defined globally
     rec_string = re.sub(r'ns0:', '', re.sub(r' xmlns:ns0=\".*\.xsd\"', '', '\n'.join(rec_list)))
 
