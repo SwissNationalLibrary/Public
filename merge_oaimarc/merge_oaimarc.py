@@ -13,8 +13,37 @@ import os
 import sys
 import re
 import platform
+import logging
+from logging.handlers import QueueHandler, QueueListener
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
+
+
+def worker_init(q):
+    # all records from worker processes go to qh and then into q
+    qh = QueueHandler(q)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(qh)
+
+
+def logger_init():
+    q = mp.Queue()
+    # this is the handler for all log records
+    # handler = logging.StreamHandler()
+    handler = logging.FileHandler('log.csv', 'w')
+    handler.setFormatter(logging.Formatter("%(message)s"))
+
+    # ql gets records from the queue and sends them to the handler
+    ql = QueueListener(q, handler)
+    ql.start()
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    # add the handler to the logger so records from this process are handled
+    logger.addHandler(handler)
+
+    return ql, q
 
 
 # Funktion "Display Progress Bar" -- Function "Display Progress Bar"
@@ -66,21 +95,47 @@ def parse_xml(input_file):
             rec = node.find('a:metadata/b:record', ns)
             # if a oaimarc-record is present add it to list as a string
             if rec is not None and rec.find('b:controlfield[@tag="008"]', ns) is not None:
+                t_001 = rec.find('b:controlfield[@tag="001"]', ns).text
                 t_008 = rec.find('b:controlfield[@tag="008"]', ns).text
                 if t_008 is not None:
                     if len(t_008) > 40:
-                        pass
-                    elif not t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
-                        rec_list.append(ET.tostring(rec, encoding='unicode'))
-                    elif t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
-                        if int(t_008[7:11]) < 2000:
+                        logging.info('008 zu lang;{};{}'.format(t_001, t_008))
+                        if t_008[7:11].isnumeric():
+                            if int(t_008[7:11]) < 2000:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        elif t_008[11:15].isnumeric():
+                            if int(t_008[11:15]) < 2000:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                    elif len(t_008) < 40:
+                        logging.info('008 zu kurz;{};{}'.format(t_001, t_008))
+                    elif t_008[6] == 's':
+                        if t_008[11:15].isnumeric() or 'u' in t_008[11:15] or 'n' in t_008[11:15]:
+                            logging.info('Jahr falsch kodiert;{};{}'.format(t_001, t_008))
+                            if 'u' in t_008[7:11]:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            if t_008[7:11].isnumeric():
+                                if int(t_008[7:11]) < 2000:
+                                    rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        else:
+                            if not t_008[7:11].isnumeric():
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            elif t_008[7:11].isnumeric():
+                                if int(t_008[7:11]) < 2000:
+                                    rec_list.append(ET.tostring(rec, encoding='unicode'))
+                    else:
+                        if not t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
                             rec_list.append(ET.tostring(rec, encoding='unicode'))
-                    elif t_008[11:15].isnumeric() and not t_008[7:11].isnumeric():
-                        if int(t_008[11:15]) < 2000:
-                            rec_list.append(ET.tostring(rec, encoding='unicode'))
-                    elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
-                        if int(t_008[7:11]) < 2000 or int(t_008[11:15]) < 2000:
-                            rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        elif t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
+                            if int(t_008[7:11]) < 2000:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        elif t_008[11:15].isnumeric() and not t_008[7:11].isnumeric():
+                            if int(t_008[11:15]) == 9999 or int(t_008[11:15]) < 2000:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
+                            if int(t_008[7:11]) < 2000 or int(t_008[11:15]) == 9999 or int(t_008[11:15]) < 2000 :
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                else:
+                    logging.info('008 fehlt;{}'.format(t_001))
     # remove all namespaces and namespace-prefixes because the namespace is defined globally
     rec_string = re.sub(r'ns0:', '', re.sub(r' xmlns:ns0=\".*\.xsd\"', '', '\n'.join(rec_list)))
 
@@ -91,6 +146,7 @@ def parse_xml(input_file):
 # --------------------------------------------------------------------------------------------------
 def main():
     """Start main program."""
+    q_listener, q = logger_init()
     # Ask for input path to oaimarc files
     while True:
         pfad = input('Bitte kompletten Pfad zu den Daten angeben: ').rstrip('/\ ').strip("'\"")
@@ -122,11 +178,12 @@ xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSche
 xsi:schemaLocation="http://www.loc.gov/MARC21/slim \
 http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
             # iterate over the file_list with preset xslt_transform and file_list as iterator
-            with mp.Pool(mp.cpu_count()) as pool:
+            with mp.Pool(mp.cpu_count(), worker_init, [q]) as pool:
                 for cnt, _ in enumerate(pool.imap_unordered(parse_xml, file_list), 1):
                     output.write(_)
                     output.flush()
                     progress(cnt, len(file_list), status='XML verarbeitet')
+                q_listener.stop()
             output.write('</collection>')
         print('Datei "output.xml" wurde produziert.')
     else:
