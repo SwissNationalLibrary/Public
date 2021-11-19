@@ -100,14 +100,19 @@ def parse_xml(input_file):
                 leader = rec.find('b:leader', ns).text
                 if len(leader) != 24:
                     logging.info('Leader inkorrekt;{};{}'.format(t_001, leader))
+                    year = 1992
+                elif leader[6] in ['e', 'f']:
+                    year = 1994
+                else:
+                    year = 1992
                 if t_008 is not None:
                     if len(t_008) > 40:
                         logging.info('008 zu lang;{};{}'.format(t_001, t_008))
                         if t_008[7:11].isnumeric():
-                            if int(t_008[7:11]) <= 1992:
+                            if int(t_008[7:11]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                         elif t_008[11:15].isnumeric():
-                            if int(t_008[11:15]) <= 1992:
+                            if int(t_008[11:15]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                     elif len(t_008) < 40:
                         logging.info('008 zu kurz;{};{}'.format(t_001, t_008))
@@ -117,25 +122,26 @@ def parse_xml(input_file):
                             if 'u' in t_008[7:11]:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                             if t_008[7:11].isnumeric():
-                                if int(t_008[7:11]) <= 1992:
+                                if int(t_008[7:11]) <= year:
                                     rec_list.append(ET.tostring(rec, encoding='unicode'))
                         else:
                             if not t_008[7:11].isnumeric():
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                             elif t_008[7:11].isnumeric():
-                                if int(t_008[7:11]) <= 1992:
+                                if int(t_008[7:11]) <= year:
                                     rec_list.append(ET.tostring(rec, encoding='unicode'))
                     else:
                         if not t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
                             rec_list.append(ET.tostring(rec, encoding='unicode'))
                         elif t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
-                            if int(t_008[7:11]) <= 1992:
+                            if int(t_008[7:11]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                         elif t_008[11:15].isnumeric() and not t_008[7:11].isnumeric():
-                            if int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= 1992:
+                            if int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                         elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
-                            if int(t_008[7:11]) <= 1992 or int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= 1992:
+                            if int(t_008[7:11]) <= year or int(t_008[11:15]) == 9999 \
+                              or int(t_008[11:15]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                 else:
                     logging.info('008 fehlt;{}'.format(t_001))

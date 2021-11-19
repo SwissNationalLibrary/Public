@@ -19,3 +19,7 @@ Icon
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 .ropeproject
+
+# Files created by scripts
+.csv
+.xml
