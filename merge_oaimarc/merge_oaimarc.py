@@ -141,7 +141,7 @@ def parse_xml(input_file):
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                         elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
                             if int(t_008[7:11]) <= year or int(t_008[11:15]) == 9999 \
-                              or int(t_008[11:15]) <= year:
+                              or (int(t_008[11:15]) <= year and int(t_008[7:11]) <= year):
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                 else:
                     logging.info('008 fehlt;{}'.format(t_001))
