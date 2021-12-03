@@ -95,54 +95,90 @@ def parse_xml(input_file):
             rec = node.find('a:metadata/b:record', ns)
             # if a oaimarc-record is present add it to list as a string
             if rec is not None and rec.find('b:controlfield[@tag="008"]', ns) is not None:
+                # get information elements for checks and logging
                 t_001 = rec.find('b:controlfield[@tag="001"]', ns).text
                 t_008 = rec.find('b:controlfield[@tag="008"]', ns).text
                 leader = rec.find('b:leader', ns).text
+                # check length of leader and set year to check in t_008
                 if len(leader) != 24:
                     logging.info('Leader inkorrekt;{};{}'.format(t_001, leader))
                     year = 1992
+                # set a higher year-value for map material
                 elif leader[6] in ['e', 'f']:
                     year = 1994
                 else:
                     year = 1992
+                # check lenght and year of t_008
                 if t_008 is not None:
+                    # check for leaders that are irregularly long (longer than 40 characters)
                     if len(t_008) > 40:
                         logging.info('008 zu lang;{};{}'.format(t_001, t_008))
+                        # check for numeric year value in 1st position
                         if t_008[7:11].isnumeric():
                             if int(t_008[7:11]) <= year:
+                                # put record in list for output
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        # check for numeric year value in 2nd position
                         elif t_008[11:15].isnumeric():
                             if int(t_008[11:15]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        # excludes everything that has no numeric year values
+                        else:
+                            logging.error('Fall 1 greift nicht: {}'.format(t_001))
+                    # check for leaders that are irregularly short (shorter than 40 characters)
                     elif len(t_008) < 40:
                         logging.info('008 zu kurz;{};{}'.format(t_001, t_008))
+                    # check for "single date" with irregular date in 2nd position
                     elif t_008[6] == 's':
+                        # check for irregular date in 2nd position
                         if t_008[11:15].isnumeric() or 'u' in t_008[11:15] or 'n' in t_008[11:15]:
                             logging.info('Jahr falsch kodiert;{};{}'.format(t_001, t_008))
+                            # check 1st position for non-numeric date
                             if 'u' in t_008[7:11]:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # check 1st position for numeric date
                             if t_008[7:11].isnumeric():
                                 if int(t_008[7:11]) <= year:
                                     rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # log records excluded because of irregular date in 1st position
+                            else:
+                                logging.error('Fall 2.1 greift nicht;{};{}'.format(t_001, t_008))
+                        # handle standard case
                         else:
+                            # check for non-numeric date in 1st position
                             if not t_008[7:11].isnumeric():
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # check for numeric date in 1st position
                             elif t_008[7:11].isnumeric():
                                 if int(t_008[7:11]) <= year:
                                     rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # log records excluded because they are not caught by above rules
+                            else:
+                                logging.error('Fall 2.2 greift nicht;{};{}'.format(t_001, t_008))
+                    # catch all cases that are not "single date"
                     else:
+                        # catch all cases with non-numeric dates both positions
                         if not t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
                             rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        # catch cases with numeric 1st date
                         elif t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
                             if int(t_008[7:11]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        # catch cases with numeric 2nd date and non-numeric 1st date
                         elif t_008[11:15].isnumeric() and not t_008[7:11].isnumeric():
                             if int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        # catch cases with numeric dates in both positions
                         elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
-                            if int(t_008[7:11]) <= year or int(t_008[11:15]) == 9999 \
-                              or (int(t_008[11:15]) <= year and int(t_008[7:11]) <= year):
+                            # both positions meet criterium
+                            if int(t_008[7:11]) <= year and int(t_008[11:15]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # 1st position meets criterium but second does not
+                            elif int(t_008[7:11]) <= year and int(t_008[11:15]) > year:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                        # log records excluded because they are not caught by above rules
+                        else:
+                            logging.error('Fall 3 greift nicht;{};{}'.format(t_001, t_008))
                 else:
                     logging.info('008 fehlt;{}'.format(t_001))
     # remove all namespaces and namespace-prefixes because the namespace is defined globally
