@@ -164,10 +164,20 @@ def parse_xml(input_file):
                         elif t_008[7:11].isnumeric() and not t_008[11:15].isnumeric():
                             if int(t_008[7:11]) <= year:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
-                        # catch cases with numeric 2nd date and non-numeric 1st date
+                        # catch cases with non-numeric 1st date and numeric 2nd date
                         elif t_008[11:15].isnumeric() and not t_008[7:11].isnumeric():
-                            if int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= year:
+                            # get periodical publications that started in 19th and 20th century
+                            if leader[7] in ['b', 'i', 's'] and t_008[7:9].isnumeric()\
+                             and t_008[7:9] in ['18', '19']:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            elif int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= year:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # get all collections with unknown 1st date
+                            elif leader[7] in ['c', 'd']:
+                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                            # else:
+                            #     logging.error('Fall 3.1 greift nicht;{};{};{};{}'.format(
+                            #         t_001, t_008, leader[7], t_008[7:9]))
                         # catch cases with numeric dates in both positions
                         elif t_008[7:11].isnumeric() and t_008[11:15].isnumeric():
                             # both positions meet criterium
@@ -191,6 +201,7 @@ def parse_xml(input_file):
 # --------------------------------------------------------------------------------------------------
 def main():
     """Start main program."""
+    print('Erstellt MARCXML-Importdatei für FH Fribourg.')
     q_listener, q = logger_init()
     # Ask for input path to oaimarc files
     while True:
