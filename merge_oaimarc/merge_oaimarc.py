@@ -192,7 +192,8 @@ def parse_xml(input_file):
                 else:
                     logging.info('008 fehlt;{}'.format(t_001))
     # remove all namespaces and namespace-prefixes because the namespace is defined globally
-    rec_string = re.sub(r'ns0:', '', re.sub(r' xmlns:ns0=\".*\.xsd\"', '', '\n'.join(rec_list)))
+    # rec_string = re.sub(r'ns0:', '', re.sub(r' xmlns:ns0=\".*\.xsd\"', '', '\n'.join(rec_list)))
+    rec_string = re.sub(r'ns0:', '', re.sub(r' xmlns:ns0=\".*\.xsd\"', '', ''.join(rec_list)))
 
     return rec_string
 
