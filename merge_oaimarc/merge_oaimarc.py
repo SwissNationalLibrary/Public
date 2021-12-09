@@ -171,7 +171,16 @@ def parse_xml(input_file):
                              and t_008[7:9] in ['18', '19']:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
                             elif int(t_008[11:15]) == 9999 or int(t_008[11:15]) <= year:
-                                rec_list.append(ET.tostring(rec, encoding='unicode'))
+                                t_007 = rec.find('b:controlfield[@tag="007"]', ns)
+                                # general filter to rule out electronic publications
+                                if t_007 is None:
+                                    rec_list.append(ET.tostring(rec, encoding='unicode'))
+                                # keep everything that is not a website or electronic
+                                else:
+                                    if t_007.text[0:2] == 'cr':
+                                        pass
+                                    else:
+                                        rec_list.append(ET.tostring(rec, encoding='unicode'))
                             # get all collections with unknown 1st date
                             elif leader[7] in ['c', 'd']:
                                 rec_list.append(ET.tostring(rec, encoding='unicode'))
