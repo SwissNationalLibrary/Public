@@ -221,8 +221,11 @@ def main():
         if os.path.isdir(pfad):
             break
         else:
-            print('Pfad kann nicht gefunden werden. Bitte Pfadnamen "{}" überprüfen.'.
-                  format(pfad))
+            if len(pfad) == 0:
+                print('Es wurde kein Pfad angegeben!')
+            else:
+                print('Pfad kann nicht gefunden werden. Bitte Pfadnamen "{}" überprüfen.'.
+                      format(pfad))
             continue
 
     # Create list of all oaimarc files (test for ".xml" and omit resource forks)
@@ -238,10 +241,7 @@ def main():
     if len(file_list) > 0:
         # Create output file
         with open('output.xml', 'w', encoding='utf-8') as output:
-            output.write('<?xml version="1.0" encoding="UTF-8"?>\n<collection \
-xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
-xsi:schemaLocation="http://www.loc.gov/MARC21/slim \
-http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
+            output.write('<?xml version="1.0" encoding="UTF-8"?>\n<collection xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
             # iterate over the file_list with preset xslt_transform and file_list as iterator
             with mp.Pool(mp.cpu_count(), worker_init, [q]) as pool:
                 for cnt, _ in enumerate(pool.imap_unordered(parse_xml, file_list), 1):
