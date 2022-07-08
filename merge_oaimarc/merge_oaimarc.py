@@ -87,6 +87,7 @@ def parse_xml(input_file):
     rec_list = []
     # define namespaces
     ns = {'a': 'http://www.openarchives.org/OAI/2.0/', 'b': 'http://www.loc.gov/MARC21/slim'}
+    ET.register_namespace('', 'http://www.loc.gov/MARC21/slim')
     # parse oai-pmh xml file
     for (event, node) in ET.iterparse(input_file):
         # select oai-pmh-record
@@ -201,7 +202,7 @@ def parse_xml(input_file):
                 else:
                     logging.info('008 fehlt;{}'.format(t_001))
     # remove all namespaces and namespace-prefixes because the namespace is defined globally
-    rec_string = re.sub(r'ns0:', '', re.sub(r' xmlns:ns0=\".*\.xsd\"', '', ''.join(rec_list)))
+    rec_string = re.sub(r' xmlns=\".*\.xsd\"', '', ''.join(rec_list))
 
     return rec_string
 
@@ -241,7 +242,10 @@ def main():
     if len(file_list) > 0:
         # Create output file
         with open('output.xml', 'w', encoding='utf-8') as output:
-            output.write('<?xml version="1.0" encoding="UTF-8"?>\n<collection xmlns="http://www.loc.gov/MARC21/slim" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
+            output.write('<?xml version="1.0" encoding="UTF-8"?>\n<collection xmlns="http://www.loc.gov/MARC21/slim" '
+                         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+                         'xsi:schemaLocation="http://www.loc.gov/MARC21/slim '
+                         'http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd">\n')
             # iterate over the file_list with preset xslt_transform and file_list as iterator
             with mp.Pool(mp.cpu_count(), worker_init, [q]) as pool:
                 for cnt, _ in enumerate(pool.imap_unordered(parse_xml, file_list), 1):
